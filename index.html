@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abnner,s AI</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.2/firebase-firestore-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="auroraBlob b1"></div>
+<div class="auroraBlob b2"></div>
+<div class="auroraBlob b3"></div>
+
+<div id="welcomeOverlay" style="display:none;">
+  <div id="welcomeBox">
+    <h2>👋 Olá! Seja bem-vindo</h2>
+    <p>Para poder entrar, você precisa de uma chave grátis da Groq. É rapidinho, veja como:</p>
+    <ol id="tutorialSteps">
+      <li>Acesse <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></li>
+      <li>Crie uma conta grátis (com email ou Google)</li>
+      <li>Clique em <strong>"Create API Key"</strong></li>
+      <li>Dê um nome qualquer pra ela e confirme</li>
+      <li>Copie a chave gerada (começa com <strong>gsk_</strong>)</li>
+      <li>Cole ela no campo abaixo e clique em confirmar</li>
+    </ol>
+    <input id="welcomeKeyInput" type="password" placeholder="Cole sua chave aqui (gsk_...)">
+    <button id="welcomeConfirmBtn">Confirmar e entrar</button>
+    <div id="welcomeError"></div>
+  </div>
+</div>
+
+<div id="authOverlay" style="display:none;">
+  <div id="authBox">
+    <div id="authTabs">
+      <button id="tabCadastrar" class="authTab active">Cadastrar</button>
+      <button id="tabEntrar" class="authTab">Entrar</button>
+    </div>
+    <h2 id="authTitle">Crie seu apelido</h2>
+    <p id="authDesc">Antes de conversar, escolha como quer ser chamado por aqui.</p>
+    <input id="authNomeInput" type="text" placeholder="Seu nome ou apelido" maxlength="30">
+    <input id="authSenhaInput" type="password" placeholder="Senha do AbnnerF" style="display:none; margin-top:8px;">
+    <button id="authConfirmBtn">Continuar</button>
+    <div id="authError"></div>
+  </div>
+</div>
+
+<div id="feedbackOverlay" style="display:none;">
+  <div id="feedbackBox">
+    <h2>💬 Enviar feedback</h2>
+    <p>Manda qualquer sugestão, elogio, problema ou ideia — vai direto pro AbnnerF.</p>
+    <textarea id="feedbackTexto" rows="4" placeholder="Escreve aqui..."></textarea>
+    <button id="feedbackConfirmBtn">Enviar</button>
+    <button id="feedbackFecharBtn">Cancelar</button>
+    <div id="feedbackStatus"></div>
+  </div>
+</div>
+
+<div id="sidebarBackdrop"></div>
+<div id="sidebar">
+  <button id="newChatBtn"><img id="newChatIcon" src="novo-chat.png" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'✚',id:'newChatIcon'}))"> Novo chat</button>
+  <button id="feedbackBtn">💬 Enviar feedback</button>
+  <button id="gamesBtn">🎮 Jogos</button>
+  <div id="chatList"></div>
+  <div id="sidebarFooter">
+    <div id="userBadge" style="display:none;"></div>
+    <button id="adminBtn" style="display:none;">⚙️ Painel Admin</button>
+    <input id="apiKeyInput" type="password" placeholder="Chave da Groq (gsk_...)">
+    <button id="saveKeyBtn">Salvar chave</button>
+    <div id="keyStatus">Carregando...</div>
+  </div>
+</div>
+
+<div id="adminOverlay" style="display:none;">
+  <div id="adminBox">
+    <h2>⚙️ Painel Admin</h2>
+
+    <label class="adminLabel">Nome da IA</label>
+    <input id="adminNomeIA" type="text" placeholder="Abnner,s AI">
+
+    <label class="adminLabel">Personalidade extra (instruções pra IA seguir)</label>
+    <textarea id="adminPersonalidade" rows="3" placeholder="Ex: seja bem-humorado, use gírias, seja direto ao ponto..."></textarea>
+
+    <label class="adminCheck">
+      <input id="adminTomSolto" type="checkbox">
+      Tom mais solto e direto (menos formalidade, menos disclaimers)
+    </label>
+
+    <label class="adminLabel">Administradores do site</label>
+    <div id="adminAddRow">
+      <input id="adminNovoNome" type="text" placeholder="Nome ou apelido da pessoa">
+      <button id="adminAddBtn">Adicionar</button>
+    </div>
+    <div id="adminListaExtras"></div>
+
+    <label class="adminLabel">📬 Feedbacks recebidos</label>
+    <div id="adminFeedbacks"></div>
+
+    <label class="adminLabel">🚨 Denúncias (conversas encerradas por mau uso)</label>
+    <div id="adminDenuncias"><div class="adminListaVazia">Carregando...</div></div>
+
+    <div id="adminStats"></div>
+
+    <div id="adminBtns">
+      <button id="adminSalvarBtn">Salvar</button>
+      <button id="adminFecharBtn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="gamesOverlay" style="display:none;">
+  <div id="gamesTopbar">
+    <button id="gamesBackBtn">←</button>
+    <h2 id="gamesTitulo">🎮 Jogos</h2>
+  </div>
+  <div id="gamesContent">
+
+    <div id="gamesMenu">
+      <button class="gameCard" data-jogo="velha">
+        <span class="gameCardIcone">❌⭕</span>
+        <span class="gameCardNome">Jogo da Velha</span>
+      </button>
+      <button class="gameCard" data-jogo="xadrez">
+        <span class="gameCardIcone">♟️</span>
+        <span class="gameCardNome">Xadrez</span>
+      </button>
+    </div>
+
+    <div id="gamesModoMenu" style="display:none;">
+      <p>Contra quem você quer jogar?</p>
+      <button id="modoIABtn" class="modoJogoBtn">🤖 Contra a IA</button>
+      <button id="modoLocalBtn" class="modoJogoBtn">🧑‍🤝‍🧑 Contra outra pessoa (neste aparelho)</button>
+    </div>
+
+    <div id="velhaArea" style="display:none;">
+      <div id="velhaStatus"></div>
+      <div id="velhaBoard"></div>
+    </div>
+
+    <div id="xadrezArea" style="display:none;">
+      <div id="xadrezStatus"></div>
+      <div id="xadrezBoard"></div>
+    </div>
+
+    <button id="jogoReiniciarBtn" style="display:none;">🔄 Jogar de novo</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+
+    <button id="menuBtn">☰</button>
+    <div class="brandMark"><span class="logoOrb"></span><h1 id="chatTitle">Abnner,s AI</h1></div>
+  </div>
+  <div id="chat"></div>
+  <div id="imagePreviewBar" style="display:none;">
+    <img id="imagePreviewThumb">
+    <span>Imagem anexada</span>
+    <button id="removeImageBtn">✕</button>
+  </div>
+  <div id="recordBar" style="display:none;">
+    <span id="recordDot">🔴</span>
+    <span id="recordTexto">Gravando... 0:00</span>
+  </div>
+  <div id="chatEncerradoBanner" style="display:none;">
+    🔒 Esta conversa foi encerrada por uso inadequado.
+  </div>
+  <footer>
+    <input id="fileInput" type="file" accept="image/*" style="display:none;">
+    <button id="attachBtn" title="Anexar imagem">📎</button>
+    <button id="micBtn" title="Gravar áudio"><img id="micIcon" src="microfone.png" alt="Microfone" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'🎤',id:'micIcon'}))"></button>
+    <textarea id="userInput" rows="1" placeholder="Digite sua mensagem..."></textarea>
+    <button id="sendBtn"><img id="sendIcon" src="enviar.png" alt="Enviar" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'➤',id:'sendIcon'}))"></button>
+  </footer>
+</div>
+
+
+<script src="script.js"></script>
+</body>
+</html>
